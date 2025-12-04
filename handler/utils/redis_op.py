@@ -1,6 +1,5 @@
 from redis import Redis
 import json
-import uuid
 from data_handler.settings import REDIS
 
 class RedisClient:
@@ -26,4 +25,4 @@ class RedisClient:
         self.client.delete(key)
 
     def generate_key(self):
-        return str(uuid.uuid4())
+        return self.client.incr("data_record_key")
