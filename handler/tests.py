@@ -6,7 +6,7 @@ import random
 
 from handler.models import DataRecord
 from handler.utils.redis_op import RedisClient
-from handler.tasks import scan_redis
+from handler.tasks import scan_redis_queue as scan_redis
 
 User = get_user_model()
 class Redis_object:
@@ -49,10 +49,10 @@ class HighLoadTransactionTest(TestCase):
             payloads.append(payload)
             response = self.client.post(url, data=payload, format="json")
             self.assertIn(response.status_code, [200, 201, 202])
+        queue_length = self.redis.client.llen("datarecord_queue")
+        self.assertEqual(queue_length, requests_amount)
 
         # بررسی اینکه داده‌ها در Redis اضافه شدند
-        redis_keys = self.redis.client.keys("*")
-        self.assertGreaterEqual(len(redis_keys), requests_amount)
 
         # مرحله 2: اجرای ورکر سلری (سینک)
         scan_redis.apply()  # مستقیم تابع را اجرا می‌کنیم
