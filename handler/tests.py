@@ -6,7 +6,7 @@ import random
 
 from handler.models import DataRecord
 from handler.utils.redis_op import RedisClient
-from handler.tasks import scan_redis  # ورکر سلری شما
+from handler.tasks import scan_redis
 
 User = get_user_model()
 class Redis_object:
@@ -36,7 +36,7 @@ class HighLoadTransactionTest(TestCase):
 
     def test_transactions(self):
         url = reverse("datarecord-upload")
-        requests_amount = 1000  # برای تست سریعتر، می‌توانید عدد را افزایش دهید
+        requests_amount = 1000
 
         payloads = []
 
@@ -62,7 +62,7 @@ class HighLoadTransactionTest(TestCase):
             exists = DataRecord.objects.filter(
                 user=self.user,
                 weight=payload['weight'],
-                height=payload['height']
+                height=payload['height'],
             ).exists()
             self.assertTrue(exists)
 
