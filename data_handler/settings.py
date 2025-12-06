@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,9 +79,13 @@ ASGI_APPLICATION = "data_handler.asgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'django.db.backends.postgresql',
+        'HOST': config('DB_HOST', default='127.0.0.1'),
+        'NAME': config('DB_NAME', default='test'),
+        'USER': config('DB_USER', default='test-user'),
+        'PASSWORD': config('DB_PASSWORD', default='test-pass'),
+        'PORT': config('DB_PORT', default='5432'),
+        }
 }
 
 
@@ -126,3 +131,20 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REDIS = {
+    'HOST': config('HOST',default='localhost'),
+    'PORT': config('PORT',default=6379,cast=int),
+    'USERNAME': config('USERNAME',default=None),
+    'PASSWORD': config('PASSWORD',default=None),
+}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+CELERY_BROKER_URL = "redis://localhost:6379/1"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/2"
