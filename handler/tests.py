@@ -6,7 +6,7 @@ import random
 
 from handler.models import DataRecord
 from handler.utils.redis_op import RedisClient
-from handler.tasks import scan_redis_queue as scan_redis
+from handler.tasks import scan_redis_queue
 
 User = get_user_model()
 class Redis_object:
@@ -55,7 +55,8 @@ class HighLoadTransactionTest(TestCase):
         # بررسی اینکه داده‌ها در Redis اضافه شدند
 
         # مرحله 2: اجرای ورکر سلری (سینک)
-        scan_redis.apply()  # مستقیم تابع را اجرا می‌کنیم
+        scan_redis_queue.apply()  
+        # # مستقیم تابع را اجرا می‌کنیم
 
         # بررسی دیتابیس
         for payload in payloads:
