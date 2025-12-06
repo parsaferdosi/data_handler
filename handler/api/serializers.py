@@ -23,10 +23,20 @@ class ListDataRecordSerializer(serializers.ModelSerializer):
 
 
 class CreateDataRecordSerializer(serializers.ModelSerializer):
+    bmi=serializers.SerializerMethodField()
     class Meta:
         model = DataRecord
-        fields = ['weight', 'height']
+        fields = ['weight', 'height','bmi']
+        read_only_fields = ["bmi"]
 
+    def get_bmi(self, obj):
+        weight = obj.get('weight')
+        height = obj.get('height')
+        if height > 0:
+            bmi = weight / ((height / 100) ** 2)
+            return round(bmi, 2)
+        return None
+    
     def validate(self, attrs):
         weight = attrs.get('weight')
         height = attrs.get('height')
@@ -42,6 +52,7 @@ class CreateDataRecordSerializer(serializers.ModelSerializer):
         data = {
             'weight': validated_data['weight'],
             'height': validated_data['height'],
+            'bmi': self.get_bmi(validated_data),
             'user': user.id
         }
 

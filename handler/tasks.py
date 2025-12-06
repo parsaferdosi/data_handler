@@ -19,6 +19,7 @@ def scan_redis():
     client = redis.client
 
     keys = client.keys("*")
+    records_to_create = []
 
     for key in keys:
         key = key.decode("utf-8")
@@ -33,14 +34,22 @@ def scan_redis():
         if not data:
             continue
 
-
-        user_obj = User.objects.get(id=data["user"])
-
-        DataRecord.objects.create(
+        try:
+            user_obj = User.objects.get(id=data["user"])
+        except User.DoesNotExist:
+            continue
+        record = DataRecord(
             user=user_obj,
             weight=data["weight"],
             height=data["height"],
-        )
+            bmi = data["bmi"]
 
+        )
+        records_to_create.append(record)
         # بعد از مصرف، پاکش کن
         redis.delete_data(key)
+    try:
+        DataRecord.objects.bulk_create(records_to_create)
+    except Exception as e:
+        # log خطا یا ignore
+        print(f"Error during bulk_create: {e}")

@@ -10,7 +10,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     "scan-redis-every-second": {
         "task": "handler.tasks.scan_redis",
-        "schedule": 5.0,
+        "schedule": 10,
     },
 }
 
