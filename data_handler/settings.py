@@ -148,15 +148,17 @@ CHANNEL_LAYERS = {
         },
     },
 }
-CELERY_BROKER_URL = "redis://localhost:6379/1"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/2"
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/1"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/2"
 
 CELERY_TASK_QUEUES = (
     Queue('notify_queue'),
+    Queue('celery'),
 )
 CELERY_BEAT_SCHEDULE = {
     'flush-db-every-5-minutes': {
         'task': 'handler.tasks.flush_db_queue',
         'schedule': crontab(minute='*/5'),
+        'options': {'queue': 'celery'},
     },
 }

@@ -19,12 +19,12 @@ class CreateDataRecordSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         redis=Redis_object.get_redis_object()
         data = {
+            'user_id': self.context['request'].user.id,
             'data': validated_data['data'],
             'date': validated_data['date'].isoformat()
         }
-        user_id = self.context['request'].user.id
         # Store date in celety redis queues
-        notify_new_data.apply_async(args=[data,user_id], queue='notify_queue')
-        redis.client.rpush("db_queue", json.dumps({ ... }))
+        notify_new_data.apply_async(args=[data], queue='notify_queue')
+        redis.client.rpush("db_queue", json.dumps(data))
         return data
 

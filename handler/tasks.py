@@ -16,23 +16,42 @@ class Redis_object:
             cls.__redis = RedisClient().client
         return cls.__redis
 @shared_task(queue='notify_queue')
-def notify_new_data(data, user_id):
+def notify_new_data(data):
     channel_layer = get_channel_layer()
-
     async_to_sync(channel_layer.group_send)(
-        f"user_{user_id}",
-        {
-            'type': 'new_data',
-            'data': data
-        }
-    )
+        "root_group",
+            {
+                "type": "receive",
+                "data": data
+            }
+        )
+
 
 @shared_task
 def flush_db_queue():
     redis=Redis_object.get_redis_object()
-    items=[]
-    for _ in range(len(redis.lrange("db_queue", 0, -1))):
-        raw = redis.rpop("db_queue")
-        if not raw:
+    queue_length = redis.llen("db_queue")
+    if queue_length == 0:
+        return 
+
+    records_to_create = []
+
+    for _ in range(queue_length):
+        item = redis.lpop("db_queue") 
+        if not item:
             break
-        items.append(json.loads(raw))
+        data = json.loads(item)
+        try:
+            user_obj = User.objects.get(id=data["user_id"])
+        except User.DoesNotExist:
+            continue
+
+        record = DataRecord(
+            user=user_obj,
+            data=data["data"],
+            date=data["date"]
+        )
+        records_to_create.append(record)
+
+    if records_to_create:
+        DataRecord.objects.bulk_create(records_to_create)
