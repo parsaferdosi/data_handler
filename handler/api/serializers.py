@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from handler.models import DataRecord
 from handler.utils.redis_op import RedisClient
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 import json
 
 class Redis_object:
@@ -59,16 +57,6 @@ class CreateDataRecordSerializer(serializers.ModelSerializer):
         # Save to Redis
         redis = Redis_object.get_redis_object()
         redis.client.rpush("datarecord_queue", json.dumps(data))
-        # Send WebSocket Message ✓ (fixed)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            "root_group",
-            {
-                "type": "receive",
-                "data": data
-            }
-        )
-
         return data
 
 

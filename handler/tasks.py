@@ -1,44 +1,35 @@
-from .models import DataRecord
-from django.contrib.auth.models import User
-from handler.utils.redis_op import RedisClient
 from celery import shared_task
-import json
-class Redis_object:
-    __redis = RedisClient()
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from .models import DataRecord
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
-    @classmethod
-    def get_redis_object(cls):
-        if cls.__redis is None:
-            cls.__redis = RedisClient()
-        return cls.__redis
-    
-@shared_task
-def scan_redis_queue():
-    redis = Redis_object.get_redis_object()
-    
-    queue_length = redis.client.llen("datarecord_queue")
-    if queue_length == 0:
-        return 
+@shared_task(queue='notify_queue')
+def notify_new_data(data, user_id):
+    channel_layer = get_channel_layer()
 
-    records_to_create = []
+    async_to_sync(channel_layer.group_send)(
+        f"user_{user_id}",
+        {
+            'type': 'new_data',
+            'data': data
+        }
+    )
 
-    for _ in range(queue_length):
-        item = redis.client.lpop("datarecord_queue") 
-        if not item:
-            break
-        data = json.loads(item)
-        try:
-            user_obj = User.objects.get(id=data["user"])
-        except User.DoesNotExist:
-            continue
+    save_data_task.apply_async(args=[data, user_id], queue='db_queue')
 
-        record = DataRecord(
-            user=user_obj,
-            weight=data["weight"],
-            height=data["height"],
-            bmi=data["bmi"]
-        )
-        records_to_create.append(record)
 
-    if records_to_create:
-        DataRecord.objects.bulk_create(records_to_create)
+@shared_task(queue='db_queue')
+def save_data_task(data, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return
+
+    DataRecord.objects.create(
+        user=user,
+        weight=data['weight'],
+        height=data['height'],
+        bmi=data['bmi']
+    )
