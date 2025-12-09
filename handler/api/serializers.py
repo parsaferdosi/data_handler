@@ -25,6 +25,6 @@ class CreateDataRecordSerializer(serializers.ModelSerializer):
         user_id = self.context['request'].user.id
         # Store date in celety redis queues
         notify_new_data.apply_async(args=[data,user_id], queue='notify_queue')
-        redis.client.lpush("db_queue", json.dumps({ ... }))
+        redis.client.rpush("db_queue", json.dumps({ ... }))
         return data
 
