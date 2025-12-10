@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from decouple import config
+from kombu import Queue
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,7 +85,7 @@ DATABASES = {
         'HOST': config('DB_HOST', default='127.0.0.1'),
         'NAME': config('DB_NAME', default='test'),
         'USER': config('DB_USER', default='test-user'),
-        'PASSWORD': config('DB_PASSWORD', default='test-pass'),
+        'PASSWORD': config('DB_PASSWORD', default='test-password'),
         'PORT': config('DB_PORT', default='5432'),
         }
 }
@@ -146,5 +148,17 @@ CHANNEL_LAYERS = {
         },
     },
 }
-CELERY_BROKER_URL = "redis://localhost:6379/1"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/2"
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/1"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/2"
+
+CELERY_TASK_QUEUES = (
+    Queue('notify_queue'),
+    Queue('celery'),
+)
+CELERY_BEAT_SCHEDULE = {
+    'flush-db-every-5-minutes': {
+        'task': 'handler.tasks.flush_db_queue',
+        'schedule': crontab(minute='*/5'),
+        'options': {'queue': 'celery'},
+    },
+}
