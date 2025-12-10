@@ -1,7 +1,10 @@
 from redis import Redis
 import json
 from data_handler.settings import REDIS
-
+"""
+Utility class for Redis operations
+still not completely implemented
+"""
 class RedisClient:
     def __init__(self):
         self.client = Redis(

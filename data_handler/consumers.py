@@ -1,6 +1,10 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
+"""
+WebSocket consumer to handle real-time notifications via Django Channels.
+"""
+
 class RootConsumer(AsyncWebsocketConsumer):
     group_name = "root_group"
 

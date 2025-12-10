@@ -133,13 +133,14 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+#redis settings
 REDIS = {
     'HOST': config('HOST',default='localhost'),
     'PORT': config('PORT',default=6379,cast=int),
     'USERNAME': config('USERNAME',default=None),
     'PASSWORD': config('PASSWORD',default=None),
 }
+#channels settings
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -148,6 +149,8 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+#celery settings
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/1"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/2"
 
