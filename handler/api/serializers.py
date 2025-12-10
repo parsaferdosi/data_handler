@@ -59,24 +59,24 @@ class SwingAnalyzerSerializer(serializers.Serializer):
             start_time=obj.get('start_time'),
             end_time=obj.get('end_time')
         )
+        merge_data=DataCollector_instance.merge_data()
+        if not merge_data:
+            return "No Data to merge"
         #create DataBatcher instance and import data from DataCollector instance directly using merge_data method
-        DataBatcher_instance=DataBatcher(data_list=DataCollector_instance.merge_data())
+        DataBatcher_instance=DataBatcher(data_list=merge_data)
+        data_batch=DataBatcher_instance.batch_data()
+        if not data_batch:
+            return "No Data to batch"
         filtered_data=DataFilter(
-            data_list=DataBatcher_instance.batch_data(),
+            data_list=data_batch,
             use_dynamic_threshold=True,
         )
+        filter=filtered_data.filter()
+        if not filter:
+            return "No Data after filtering"
         #create SwingAnalyzer instance and import filtered data from DataFilter instance directly using filter method
-        SwingAnalyzer_instance=SwingAnalyzer(data_list=filtered_data.filter())
+        SwingAnalyzer_instance=SwingAnalyzer(batched_data=filter)
         signals = SwingAnalyzer_instance.analyze()
         if not signals:
-            return 0.0
-
-        score = 0
-        for sig in signals:
-            if sig['signal'] == 'positive':
-                score += 1
-            else:  # sell
-                score -= 1
-
-        score = score / len(signals)
-        return round(score, 3)
+            return "No signals found"
+        return signals

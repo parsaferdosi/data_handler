@@ -1,6 +1,6 @@
 from rest_framework import generics
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from .serializers import (
     CreateDataRecordSerializer,
     SwingAnalyzerSerializer
@@ -18,7 +18,7 @@ class SwingAnalyzerView(generics.GenericAPIView):
     SwingAnalyzerView that handles GET requests to analyze data using swing trade algorithm
     """
     serializer_class = SwingAnalyzerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.query_params)
