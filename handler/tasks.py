@@ -37,7 +37,7 @@ def flush_db_queue():
     records_to_create = []
 
     for _ in range(queue_length):
-        item = redis.lpop("db_queue") 
+        item = redis.rpop("db_queue") 
         if not item:
             break
         data = json.loads(item)
