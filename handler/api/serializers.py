@@ -14,6 +14,11 @@ class Redis_object:
         return cls.__redis
 
 class CreateDataRecordSerializer(serializers.ModelSerializer):
+    """
+    CreateDataRecordSerializer that handles creation of DataRecord instances
+    it imports data into redis queue for celery to process later
+    and also notifies via celery notify task in websocket channel
+    """
     class Meta:
         model = DataRecord
         fields = ['data','date']
@@ -36,9 +41,10 @@ class SwingAnalyzerSerializer(serializers.Serializer):
      swing analyise the list of data that query gave us as score
     """
     score=serializers.SerializerMethodField()
-    
+    start_time=serializers.DateTimeField()
+    end_time=serializers.DateTimeField()
     class Meta:
-        fields=["score"]
+        fields=["score",'start_time','end_time']
     def get_score(self,obj):
         '''
         Docstring for get_score
