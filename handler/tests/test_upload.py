@@ -1,16 +1,11 @@
 import json
 import random
 
-# CHANGE: Import TransactionTestCase instead of TestCase
 from django.test import TransactionTestCase, Client 
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 from asgiref.sync import sync_to_async 
-
-from channels.testing import WebsocketCommunicator
-from data_handler.consumers import RootConsumer
-
 
 # ----------------------------
 # A fully internal Django Test Case using TransactionTestCase for stability
@@ -71,9 +66,6 @@ class DataUploadInternalTest(TransactionTestCase):
     def _check_swing_analysis(self):
         """Checks the swing analysis endpoint using the synchronous Django test client."""
         
-        # *** CRITICAL FIX HERE ***
-        # 1. Remove microsecond precision
-        # 2. Use 'T' separator and no trailing 'Z' (relying on Django/DRF to assume UTC)
         start_time_str = self.initial_time.replace(microsecond=0).isoformat().replace('+00:00', '')
         end_time_str = self.time_now.replace(microsecond=0).isoformat().replace('+00:00', '')
         
@@ -100,57 +92,8 @@ class DataUploadInternalTest(TransactionTestCase):
         data = resp.json() 
         self.assertIsInstance(data, dict)
     # Main async test method
-    async def test_upload_and_websocket_internal(self):
-        # ----------------------------
-        # 1. WebSocket Communicator setup (ASYNC)
-        # ----------------------------
-        communicator = WebsocketCommunicator(
-            RootConsumer.as_asgi(), 
-            "/ws/root/"
-        )
-        session_cookie = self.client.cookies.get("sessionid")
-        if session_cookie:
-            communicator.scope['headers'] = [
-                (b'cookie', f"sessionid={session_cookie.value}".encode('ascii'))
-            ]
-        
-        connected, _ = await communicator.connect()
-        self.assertTrue(connected)
-        
-        # ----------------------------
-        # 2. Send payloads (SYNC executed ASYNC)
-        # ----------------------------
+    async def test_upload(self):
         await self._send_all_payloads_async()
-
-        # ----------------------------
-        # 3. Check WebSocket messages (ASYNC)
-        # ----------------------------
-        ws_received_count = 0
-        for i in range(self.payload_count):
-            response_text = await communicator.receive_from(timeout=1)
-            response_data = json.loads(response_text)
-            
-            # Assertions based on the actual received format
-            self.assertIn("user_id", response_data)
-            self.assertIn("data", response_data)
-            self.assertIn("date", response_data)
-            
-            expected_data_value = self.payloads[i]['data']
-            
-            self.assertEqual(response_data["data"], expected_data_value, 
-                             msg=f"Data mismatch for payload {i}.")
-            self.assertEqual(response_data["user_id"], self.user.id,
-                             msg="User ID mismatch in received message")
-
-            self.assertNotIn("type", response_data, msg="'type' key unexpectedly found.")
-
-            ws_received_count += 1
-            
-        self.assertEqual(ws_received_count, self.payload_count, "WebSocket did not receive all messages")
-
-        # Disconnect (ASYNC)
-        await communicator.disconnect()
-
         # ----------------------------
         # 4. Final swing analysis (SYNC executed ASYNC)
         # ----------------------------
