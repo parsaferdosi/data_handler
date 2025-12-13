@@ -82,12 +82,12 @@ ASGI_APPLICATION = "data_handler.asgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'HOST': config('DB_HOST', default='127.0.0.1'),
-        'NAME': config('DB_NAME', default='test'),
-        'USER': config('DB_USER', default='test-user'),
-        'PASSWORD': config('DB_PASSWORD', default='test-password'),
-        'PORT': config('DB_PORT', default='5432'),
-        }
+        'HOST': config('POSTGRES_HOST', default='db'),
+        'NAME': config('POSTGRES_DB'),
+        'USER': config('POSTGRES_USER'),
+        'PASSWORD': config('POSTGRES_PASSWORD'),
+        'PORT': config('POSTGRES_PORT', cast=int, default=5432),
+    }
 }
 
 
@@ -134,9 +134,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #redis settings
+REDIS_HOST = config('REDIS_HOST', default='redis')
+REDIS_PORT = config('REDIS_PORT', cast=int, default=6379)
 REDIS = {
-    'HOST': config('HOST',default='localhost'),
-    'PORT': config('PORT',default=6379,cast=int),
+    'HOST': REDIS_HOST,
+    'PORT': REDIS_PORT,
     'USERNAME': config('USERNAME',default=None),
     'PASSWORD': config('PASSWORD',default=None),
 }
@@ -145,14 +147,22 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
         },
     },
 }
 
+
 #celery settings
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/1"
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/2"
+CELERY_BROKER_URL = config(
+    'CELERY_BROKER_URL',
+    default=f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+)
+
+CELERY_RESULT_BACKEND = config(
+    'CELERY_RESULT_BACKEND',
+    default=f'redis://{REDIS_HOST}:{REDIS_PORT}/1'
+)
 
 CELERY_TASK_QUEUES = (
     Queue('notify_queue'),
