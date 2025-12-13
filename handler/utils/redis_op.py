@@ -75,12 +75,14 @@ class RedisClient:
     # Key-Value operations
     # -------------------------
     def set_data(self, key, data, expire=None):
+        #set data into redis database
         try:
             self.client.set(key, json.dumps(data), ex=expire)
         except Exception as e:
             raise RuntimeError(f"Redis SET failed: {e}")
 
     def get_data(self, key):
+        #get data from redis database
         try:
             data = self.client.get(key)
             return json.loads(data) if data else None
@@ -90,21 +92,22 @@ class RedisClient:
             raise RuntimeError(f"Redis GET failed: {e}")
 
     def delete_data(self, key):
+        #delet data from redis 
         self.client.delete(key)
 
     # -------------------------
     # Queue operations (List)
     # -------------------------
     def push_queue(self, queue_name, data):
-        """Push item to queue (left push)"""
+        #Push item to queue (left push)
         self.client.lpush(queue_name, json.dumps(data))
 
     def pop_queue(self, queue_name):
-        """Pop item from queue (right pop)"""
+        #Pop item from queue (right pop)
         data = self.client.rpop(queue_name)
         return json.loads(data) if data else None
 
     def get_items(self, queue_name, start=0, end=-1):
-        """Get range of items from queue"""
+        #Get range of items from queue
         items = self.client.lrange(queue_name, start, end)
         return [json.loads(item) for item in items]
