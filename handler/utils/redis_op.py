@@ -1,31 +1,52 @@
 from redis import Redis
 import json
 from data_handler.settings import REDIS
-"""
-Utility class for Redis operations
-still not completely implemented
-"""
+
+
 class RedisClient:
     def __init__(self):
         self.client = Redis(
             host=REDIS['HOST'],
             port=REDIS['PORT'],
             db=REDIS.get('DB', 1),
-            password=REDIS.get('PASSWORD', None)
+            password=REDIS.get('PASSWORD'),
+            decode_responses=True  # خیلی مهم
         )
 
+    # -------------------------
+    # Key-Value operations
+    # -------------------------
     def set_data(self, key, data, expire=None):
-        data_json = json.dumps(data)
-        self.client.set(name=key, value=data_json, ex=expire)
+        try:
+            self.client.set(key, json.dumps(data), ex=expire)
+        except Exception as e:
+            raise RuntimeError(f"Redis SET failed: {e}")
 
     def get_data(self, key):
-        data_json = self.client.get(name=key)
-        if data_json:
-            return json.loads(data_json)
-        return None
+        try:
+            data = self.client.get(key)
+            return json.loads(data) if data else None
+        except json.JSONDecodeError:
+            return None
+        except Exception as e:
+            raise RuntimeError(f"Redis GET failed: {e}")
 
     def delete_data(self, key):
         self.client.delete(key)
 
-    def generate_key(self):
-        return self.client.incr("data_record_key")
+    # -------------------------
+    # Queue operations (List)
+    # -------------------------
+    def push_queue(self, queue_name, data):
+        """Push item to queue (left push)"""
+        self.client.lpush(queue_name, json.dumps(data))
+
+    def pop_queue(self, queue_name):
+        """Pop item from queue (right pop)"""
+        data = self.client.rpop(queue_name)
+        return json.loads(data) if data else None
+
+    def get_items(self, queue_name, start=0, end=-1):
+        """Get range of items from queue"""
+        items = self.client.lrange(queue_name, start, end)
+        return [json.loads(item) for item in items]

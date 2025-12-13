@@ -29,7 +29,7 @@ USERNAME = "parsa"
 PASSWORD = "admin"
 
 # ----------------------------
-# Admin session login (NO BS4)
+# Admin session login
 # ----------------------------
 base_session = requests.Session()
 

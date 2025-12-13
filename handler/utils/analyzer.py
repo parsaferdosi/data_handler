@@ -25,7 +25,7 @@ class DataCollector:
     """
     QUEUE_NAME = "db_queue"
     def __init__(self,start_time=None,end_time=None):
-        self.redis = redis_object.get_redis_object().client
+        self.redis = redis_object.get_redis_object()
         self.start_time=start_time
         self.end_time=end_time or timezone.now()
     def collect_data_from_db(self):
@@ -45,7 +45,7 @@ class DataCollector:
         Collect data records from Redis queue within the specified time range.
         """
         try:
-            raw_data_list = self.redis.lrange(self.QUEUE_NAME, 0, -1)
+            raw_data_list = self.redis.get_items(self.QUEUE_NAME, 0, -1)
         except Exception:
             raw_data_list = []
         data_list = []

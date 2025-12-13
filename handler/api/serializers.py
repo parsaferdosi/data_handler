@@ -31,7 +31,7 @@ class CreateDataRecordSerializer(serializers.ModelSerializer):
         }
         # Store date in celety redis queues
         notify_new_data.apply_async(args=[data], queue='notify_queue')
-        redis.client.lpush("db_queue", json.dumps(data))
+        redis.push_queue("db_queue", json.dumps(data))
         return data
 
 class SwingAnalyzerSerializer(serializers.Serializer):

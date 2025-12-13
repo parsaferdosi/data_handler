@@ -12,12 +12,12 @@ Task definitions for handling asynchronous operations
 related to DataRecord insert and notifications.
 """
 class Redis_object:
-    __redis = RedisClient().client
+    __redis = RedisClient()
 
     @classmethod
     def get_redis_object(cls):
         if cls.__redis is None:
-            cls.__redis = RedisClient().client
+            cls.__redis = RedisClient()
         return cls.__redis
 @shared_task(queue='notify_queue')
 def notify_new_data(data):
@@ -49,7 +49,7 @@ def flush_db_queue():
     records_to_create = []
 
     for _ in range(queue_length):
-        item = redis.rpop("db_queue") 
+        item = redis.pop_queue("db_queue") 
         if not item:
             break
         data = json.loads(item)
