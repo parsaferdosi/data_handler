@@ -7,6 +7,7 @@ import random
 import datetime
 from django.utils import timezone
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlencode
 
 # ----------------------------
 # Django setup
@@ -18,8 +19,8 @@ django.setup()
 # Config
 # ----------------------------
 PAYLOAD_COUNT = 2000
-MAX_WORKERS = 11
-CHUNK_SIZE = 100
+MAX_WORKERS = 4
+CHUNK_SIZE = 250
 
 UPLOAD_URL = "http://127.0.0.1:8000/api/data/upload/"
 LOGIN_URL = "http://127.0.0.1:8000/admin/login/?next=/admin/"
@@ -139,10 +140,12 @@ print(f"⏱ Total time: {end - start}")
 # ----------------------------
 # Final analyze call
 # ----------------------------
-final_url = (
-    f"http://127.0.0.1:8000/api/data/swing-analyze/"
-    f"?start_time={initial_time}&end_time={time_now}"
-)
+params = {
+    "start_time": initial_time.isoformat(),
+    "end_time": time_now.isoformat(),
+}
+final_url = f"http://127.0.0.1:8000/api/data/swing-analyze/?{urlencode(params)}"
+
 
 resp = base_session.get(final_url)
 print("Swing Analyzer:", resp.status_code)
