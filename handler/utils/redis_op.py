@@ -106,6 +106,8 @@ class RedisClient:
         #Pop item from queue (right pop)
         data = self.client.rpop(queue_name)
         return json.loads(data) if data else None
+    def get_length(self,queue_name):
+        return self.client.llen(queue_name)
 
     def get_items(self, queue_name, start=0, end=-1):
         #Get range of items from queue

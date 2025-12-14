@@ -42,7 +42,7 @@ def flush_db_queue():
     using bulk_create for efficiency.
     """
     redis=Redis_object.get_redis_object()
-    queue_length = redis.llen("db_queue")
+    queue_length = redis.get_length("db_queue")
     if queue_length == 0:
         return 
 
