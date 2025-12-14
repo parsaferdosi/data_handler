@@ -42,6 +42,49 @@ Uses **Daphne** to manage HTTP requests and WebSocket connections under a unifie
 ---
 
 ## Setup and Installation
+> **Note:** In both Docker and manual setups, the repository must be cloned first.
+### Option A: Run with Docker (Recommended)
+
+The easiest way to run the entire stack is using Docker and Docker Compose.
+> **Note:** You should create .env file from env.sample file
+
+#### Prerequisites
+
+- Docker
+- Docker Compose
+
+#### Clone the Repository
+
+```bash
+git clone https://github.com/parsaferdosi/data_handler.git
+cd data_handler
+```
+
+#### Run
+
+On **Windows**:
+
+```bash
+docker-compose up --build
+```
+
+On **Linux / macOS**:
+
+```bash
+docker compose up --build
+```
+
+Docker Compose will automatically start:
+
+- PostgreSQL
+- Redis
+- Django (ASGI + Daphne)
+- Celery Worker
+- Celery Beat
+
+---
+
+### Option B: Manual Setup (Local Development)
 
 ### 1. Clone the Repository
 
@@ -68,9 +111,9 @@ This project relies on the following services:
 
 ---
 
-## How to Run and Observe Monitoring
+## How to Run and Observe Monitoring (Manual Mode)
 
-To run the complete system, start each component in a **separate terminal**.
+To run the complete system without Docker, start each component in a **separate terminal**.
 
 ### 1. Start the Celery Worker
 
@@ -96,9 +139,29 @@ Runs the Django application in ASGI mode to handle HTTP requests and WebSocket c
 daphne data_handler.asgi:application
 ```
 
-### 4. Run the Demo Client
+---
 
-The `demo.py` file acts as a concurrent data client, sending requests to the API endpoint.
+## Initial Application Setup
+
+Before running the demo client, a Django superuser must be created.
+> **Note:** This section is separate from the project setup.
+> For instructions on how to connect to a Docker container shell, please refer to the Docker documentation.
+
+
+Create a superuser with the following credentials:
+
+- **Username:** `parsa`
+- **Password:** `admin`
+
+```bash
+python manage.py createsuperuser
+```
+
+---
+
+## Run the Demo Client
+
+After the system is fully running and the superuser is created, execute the demo client:
 
 ```bash
 python demo.py
@@ -133,4 +196,3 @@ This project is released under the **MIT License**.
 
 **Author**  
 Parsa Ferdosi Zade
-
