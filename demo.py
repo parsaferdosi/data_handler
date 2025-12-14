@@ -18,8 +18,8 @@ django.setup()
 # ----------------------------
 # Config
 # ----------------------------
-PAYLOAD_COUNT = 2000
-MAX_WORKERS = 4
+PAYLOAD_COUNT = 1000
+MAX_WORKERS = 2
 CHUNK_SIZE = 500
 
 UPLOAD_URL = "http://127.0.0.1:8000/api/data/upload/"
