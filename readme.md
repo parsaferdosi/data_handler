@@ -143,10 +143,13 @@ daphne data_handler.asgi:application
 
 ## Initial Application Setup
 
-Before running the demo client, a Django superuser must be created.
-> **Note:** This section is separate from the project setup.
-> For instructions on how to connect to a Docker container shell, please refer to the Docker documentation.
+### Docker Setup
+When running the project via Docker Compose, the Django superuser is **created automatically** during container startup using environment variables.
 
+No manual action is required.
+
+### Manual Setup (Local Development)
+When running the project manually, a Django superuser must be created before running the demo client.
 
 Create a superuser with the following credentials:
 
@@ -155,8 +158,6 @@ Create a superuser with the following credentials:
 
 ```bash
 python manage.py createsuperuser
-```
-
 ---
 
 ## Run the Demo Client
