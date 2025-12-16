@@ -158,7 +158,7 @@ Create a superuser with the following credentials:
 
 ```bash
 python manage.py createsuperuser
----
+```
 
 ## Run the Demo Client
 
