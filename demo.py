@@ -126,6 +126,7 @@ def fast_upload():
 ws_thread = threading.Thread(target=read_websocket, daemon=True)
 req_thread = threading.Thread(target=fast_upload)
 
+print("Start Sending requests")
 start = datetime.datetime.now()
 
 ws_thread.start()
