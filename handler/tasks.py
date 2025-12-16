@@ -37,7 +37,7 @@ def notify_new_data(data):
 
 
 @shared_task
-def flush_db_queue():
+def flush_db_queue(self):
     """
     Flush records from Redis queue and persist them to the database using bulk_create.
     """
@@ -73,5 +73,5 @@ def flush_db_queue():
         try:
             DataRecord.objects.bulk_create(records_to_create)
         except DatabaseError as dbError:
-            raise Exception(f'database is down,Error:{dbError}')from dbError
+            raise self.retry(exc=dbError, countdown=60)
         redis.pop_queue("db_queue", queue_length)
