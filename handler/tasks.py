@@ -4,8 +4,6 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import DataRecord
 from django.contrib.auth import get_user_model
-from django.db import DatabaseError,connections
-from django.db.utils import OperationalError
 import json
 User = get_user_model()
 
@@ -37,8 +35,8 @@ def notify_new_data(data):
         )
 
 
-@shared_task(bind=True)
-def flush_db_queue(self):
+@shared_task
+def flush_db_queue():
     """
     flush_db_queue task to process and store DataRecord instances from redis queue to database
     using bulk_create for efficiency.
@@ -47,37 +45,25 @@ def flush_db_queue(self):
     queue_length = redis.get_length("db_queue")
     if queue_length == 0:
         return 
-    db_connection=connections['default']
-    try:
-        db_connection.cursor()
-    except OperationalError as dbError:
-        raise self.retry(exc=dbError,countdown=30)
-    records_to_create = []
-    popped_items=[]
-    try:
-        for _ in range(queue_length):
-            item = redis.pop_queue("db_queue") 
-            if not item:
-                break
-            popped_items.append(item)
-            data = json.loads(item)
-            try:
-                user_obj = User.objects.get(id=data["user_id"])
-                
-                records_to_create.append(
-                    DataRecord(
-                    user=user_obj,
-                    data=data["data"],
-                    date=data["date"]
-                    )
-                )
-                
-            except (User.DoesNotExist, json.JSONDecodeError, KeyError, TypeError):
-                popped_items.pop()
-                continue
 
-        if records_to_create:
-                DataRecord.objects.bulk_create(records_to_create)
-    except DatabaseError as dbError:
-            redis.push_queue("db_queue",*popped_items)
-            raise self.retry(exc=dbError, countdown=30)
+    records_to_create = []
+
+    for _ in range(queue_length):
+        item = redis.pop_queue("db_queue") 
+        if not item:
+            break
+        data = json.loads(item)
+        try:
+            user_obj = User.objects.get(id=data["user_id"])
+        except User.DoesNotExist:
+            continue
+
+        record = DataRecord(
+            user=user_obj,
+            data=data["data"],
+            date=data["date"]
+        )
+        records_to_create.append(record)
+
+    if records_to_create:
+        DataRecord.objects.bulk_create(records_to_create)
