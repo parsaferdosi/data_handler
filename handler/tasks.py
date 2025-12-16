@@ -36,42 +36,42 @@ def notify_new_data(data):
         )
 
 
-@shared_task
+@shared_task(bind=True)
 def flush_db_queue(self):
     """
-    Flush records from Redis queue and persist them to the database using bulk_create.
+    flush_db_queue task to process and store DataRecord instances from redis queue to database
+    using bulk_create for efficiency.
     """
-    redis = Redis_object.get_redis_object()
+    redis=Redis_object.get_redis_object()
     queue_length = redis.get_length("db_queue")
-
     if queue_length == 0:
-        return
+        return 
 
-    items = redis.get_items("db_queue", 0, queue_length - 1)
     records_to_create = []
-
-    for item in items:
+    popped_items=[]
+    for _ in range(queue_length):
+        item = redis.pop_queue("db_queue") 
+        if not item:
+            break
         try:
             data = json.loads(item)
-        except (TypeError, json.JSONDecodeError):
-            continue
-
-        try:
             user_obj = User.objects.get(id=data["user_id"])
-        except User.DoesNotExist:
-            continue
-
-        records_to_create.append(
-            DataRecord(
+            
+            records_to_create.append(
+                DataRecord(
                 user=user_obj,
                 data=data["data"],
-                date=data["date"],
+                date=data["date"]
+                )
             )
-        )
+            popped_items.append(item)
+            
+        except (User.DoesNotExist, json.JSONDecodeError, KeyError, TypeError):
+            continue
 
     if records_to_create:
         try:
             DataRecord.objects.bulk_create(records_to_create)
         except DatabaseError as dbError:
-            raise self.retry(exc=dbError, countdown=60)
-        redis.pop_queue("db_queue", queue_length)
+            redis.push_queue("db_queue",*popped_items)
+            raise self.retry(exc=dbError, countdown=30)
