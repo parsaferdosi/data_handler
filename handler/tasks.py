@@ -4,6 +4,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import DataRecord
 from django.contrib.auth import get_user_model
+from django.db import DatabaseError
 import json
 User = get_user_model()
 
@@ -38,32 +39,39 @@ def notify_new_data(data):
 @shared_task
 def flush_db_queue():
     """
-    flush_db_queue task to process and store DataRecord instances from redis queue to database
-    using bulk_create for efficiency.
+    Flush records from Redis queue and persist them to the database using bulk_create.
     """
-    redis=Redis_object.get_redis_object()
+    redis = Redis_object.get_redis_object()
     queue_length = redis.get_length("db_queue")
-    if queue_length == 0:
-        return 
 
+    if queue_length == 0:
+        return
+
+    items = redis.get_items("db_queue", 0, queue_length - 1)
     records_to_create = []
 
-    for _ in range(queue_length):
-        item = redis.pop_queue("db_queue") 
-        if not item:
-            break
-        data = json.loads(item)
+    for item in items:
+        try:
+            data = json.loads(item)
+        except (TypeError, json.JSONDecodeError):
+            continue
+
         try:
             user_obj = User.objects.get(id=data["user_id"])
         except User.DoesNotExist:
             continue
 
-        record = DataRecord(
-            user=user_obj,
-            data=data["data"],
-            date=data["date"]
+        records_to_create.append(
+            DataRecord(
+                user=user_obj,
+                data=data["data"],
+                date=data["date"],
+            )
         )
-        records_to_create.append(record)
 
     if records_to_create:
-        DataRecord.objects.bulk_create(records_to_create)
+        try:
+            DataRecord.objects.bulk_create(records_to_create)
+        except DatabaseError as dbError:
+            raise Exception(f'database is down,Error:{dbError}')from dbError
+        redis.pop_queue("db_queue", queue_length)
