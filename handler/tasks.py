@@ -5,7 +5,7 @@ from asgiref.sync import async_to_sync
 from .models import DataRecord
 from django.contrib.auth import get_user_model
 from django.db import connections
-from django.db.utils import OperationalError
+from django.db import OperationalError,DatabaseError,InterfaceError
 import json
 User = get_user_model()
 
@@ -82,7 +82,7 @@ def flush_db_queue(self):
     db_connection=connections['default']
     try:
         db_connection.cursor()
-    except OperationalError as dbError:
+    except (OperationalError,DatabaseError,InterfaceError) as dbError:
         raise self.retry(exc=dbError,countdown=30)
     
     if records_to_create:
