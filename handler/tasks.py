@@ -46,28 +46,34 @@ def flush_db_queue(self):
     
     redis=Redis_object.get_redis_object()
     queue_length = redis.get_length("db_queue")
-    if queue_length == 0:
-        return   
+    parsed=[]
+    user_ids=set()
     records_to_create = []
 
-    # for _ in range(queue_length):
-    #     item = redis.pop_queue("db_queue") 
-    #     if not item:
-    #         break
-    #     data = json.loads(item)
-    #     try:
-    #         user_obj = User.objects.get(id=data["user_id"])
-    #     except User.DoesNotExist:
-    #         continue
+    if queue_length == 0:
+        return   
     items=redis.get_items("db_queue",0,queue_length - 1)
+
+
+    
+    #fetch data from redis,convert it into json and fetch user ids in user_ids list
     for item in items:
-        data=json.loads(item)
         try:
-            user_obj=User.objects.get(id=data["user_id"])
-        except User.DoesNotExist:
+            data=json.loads(item)
+            parsed.append(data)
+            user_ids.add(data["user_id"])
+        except (json.JSONDecodeError,KeyError):
+            continue
+    #fetch user from user_ids list
+    users=User.objects.in_bulk(user_ids)
+    
+    #create instanse for bulk insert
+    for data in parsed:
+        user=users.get(data["user_id"])
+        if not user:
             continue
         record = DataRecord(
-            user=user_obj,
+            user=user,
             data=data["data"],
             date=data["date"]
         )
@@ -81,4 +87,4 @@ def flush_db_queue(self):
     
     if records_to_create:
         DataRecord.objects.bulk_create(records_to_create)
-    redis.pop_queue("db_queue",items.count)
+    redis.trim_redis("db_queue",len(items))
