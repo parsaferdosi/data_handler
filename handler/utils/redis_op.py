@@ -113,3 +113,7 @@ class RedisClient:
         #Get range of items from queue
         items = self.client.lrange(queue_name, start, end)
         return [json.loads(item) for item in items]
+    def trim_redis(self,queue_name,length):
+        if not length or length<=0:
+            return
+        return self.client.ltrim(queue_name,length,-1)

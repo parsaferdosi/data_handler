@@ -4,6 +4,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import DataRecord
 from django.contrib.auth import get_user_model
+from django.db import connections
+from django.db import OperationalError,DatabaseError,InterfaceError
 import json
 User = get_user_model()
 
@@ -35,35 +37,54 @@ def notify_new_data(data):
         )
 
 
-@shared_task
-def flush_db_queue():
+@shared_task(bind=True)
+def flush_db_queue(self):
     """
     flush_db_queue task to process and store DataRecord instances from redis queue to database
     using bulk_create for efficiency.
     """
+    
     redis=Redis_object.get_redis_object()
     queue_length = redis.get_length("db_queue")
-    if queue_length == 0:
-        return 
-
+    parsed=[]
+    user_ids=set()
     records_to_create = []
 
-    for _ in range(queue_length):
-        item = redis.pop_queue("db_queue") 
-        if not item:
-            break
-        data = json.loads(item)
-        try:
-            user_obj = User.objects.get(id=data["user_id"])
-        except User.DoesNotExist:
-            continue
+    if queue_length == 0:
+        return   
+    items=redis.get_items("db_queue",0,queue_length - 1)
 
+
+    
+    #fetch data from redis,convert it into json and fetch user ids in user_ids list
+    for item in items:
+        try:
+            data=json.loads(item)
+            parsed.append(data)
+            user_ids.add(data["user_id"])
+        except (json.JSONDecodeError,KeyError):
+            continue
+    #fetch user from user_ids list
+    users=User.objects.in_bulk(user_ids)
+    
+    #create instanse for bulk insert
+    for data in parsed:
+        user=users.get(data["user_id"])
+        if not user:
+            continue
         record = DataRecord(
-            user=user_obj,
+            user=user,
             data=data["data"],
             date=data["date"]
         )
         records_to_create.append(record)
-
+    #check database connection before starting bulk insert
+    db_connection=connections['default']
+    try:
+        db_connection.cursor()
+    except (OperationalError,DatabaseError,InterfaceError) as dbError:
+        raise self.retry(exc=dbError,countdown=30)
+    
     if records_to_create:
         DataRecord.objects.bulk_create(records_to_create)
+    redis.trim_redis("db_queue",len(items))
