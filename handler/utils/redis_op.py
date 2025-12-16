@@ -102,9 +102,9 @@ class RedisClient:
         #Push item to queue (left push)
         self.client.lpush(queue_name, json.dumps(data))
 
-    def pop_queue(self, queue_name):
+    def pop_queue(self, queue_name,count):
         #Pop item from queue (right pop)
-        data = self.client.rpop(queue_name)
+        data = self.client.rpop(queue_name,count)
         return json.loads(data) if data else None
     def get_length(self,queue_name):
         return self.client.llen(queue_name)
