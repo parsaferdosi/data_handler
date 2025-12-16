@@ -167,6 +167,8 @@ After the system is fully running and the superuser is created, execute the demo
 ```bash
 python demo.py
 ```
+> **Note:**  
+> Before running `demo.py`, make sure you have created and activated a Python virtual environment and installed all required dependencies from `requirements.txt`.
 
 ### Observation
 
