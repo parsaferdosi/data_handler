@@ -88,3 +88,6 @@ def flush_db_queue(self):
     if records_to_create:
         DataRecord.objects.bulk_create(records_to_create)
     redis.trim_redis("db_queue",len(items))
+    parsed.clear()
+    records_to_create.clear()
+    items = []

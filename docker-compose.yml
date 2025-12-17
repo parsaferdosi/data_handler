@@ -33,18 +33,28 @@ services:
     env_file:
       - .env
 
-  worker:
+  database_worker:
     build:
       context: .
-      dockerfile: docker/worker/dockerfile
-    container_name: celery_worker
+      dockerfile: docker/database_worker/dockerfile
+    container_name: celery_database_worker
     command: /app/start.sh
     depends_on:
       - db
       - redis
     env_file:
       - .env
-
+  notification_worker:
+    build:
+      context: .
+      dockerfile: docker/notification_worker/dockerfile
+    container_name: celery_notification_worker
+    command: /app/start.sh
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
   beat:
     build:
       context: .
